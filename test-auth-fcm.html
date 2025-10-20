@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firebase Auth + FCM API Tester</title>
+    <!-- 
+      ⚠️  IMPORTANT: Before using this test page, you must:
+      1. Update the firebaseConfig object below with your actual Firebase project credentials
+      2. Update the API_BASE_URL if your server is running on a different port/domain
+      3. Make sure your server is running (npm run dev)
+    -->
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      .step {
+        border-left: 4px solid #007bff;
+        padding-left: 15px;
+      }
+      .step.completed {
+        border-left-color: #28a745;
+      }
+      .step.error {
+        border-left-color: #dc3545;
+      }
+
+      h1,
+      h2 {
+        color: #333;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+        margin-bottom: 10px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      button.success {
+        background: #28a745;
+      }
+      button.danger {
+        background: #dc3545;
+      }
+
+      .success {
+        color: #28a745;
+      }
+      .error {
+        color: #dc3545;
+      }
+      .info {
+        color: #17a2b8;
+      }
+      .warning {
+        color: #ffc107;
+      }
+
+      input[type="email"],
+      input[type="password"],
+      input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .token-display {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        word-break: break-all;
+        font-family: monospace;
+        border-left: 4px solid #007bff;
+        font-size: 12px;
+      }
+
+      .user-info {
+        background: #e7f3ff;
+        padding: 10px;
+        border-radius: 4px;
+        border-left: 4px solid #007bff;
+      }
+
+      .status {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .status.logged-out {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .status.logged-in {
+        background: #d4edda;
+        color: #155724;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔐 Firebase Auth + FCM API Tester</h1>
+      <p>This page tests the complete authentication and notification flow.</p>
+      <div id="authStatus">
+        <span class="status logged-out">Not Authenticated</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Authentication -->
+    <div class="container step" id="step1">
+      <h2>📝 Step 1: Authentication</h2>
+
+      <div id="authForms">
+        <h3>Register New Account</h3>
+        <input
+          type="email"
+          id="registerEmail"
+          placeholder="Email"
+          value="test@example.com"
+        />
+        <input
+          type="password"
+          id="registerPassword"
+          placeholder="Password (min 6 chars)"
+          value="password123"
+        />
+        <button id="registerBtn">Register Account</button>
+        <div id="registerResult"></div>
+
+        <hr />
+
+        <h3>Login to Existing Account</h3>
+        <input
+          type="email"
+          id="loginEmail"
+          placeholder="Email"
+          value="test@example.com"
+        />
+        <input
+          type="password"
+          id="loginPassword"
+          placeholder="Password"
+          value="password123"
+        />
+        <button id="loginBtn">Login</button>
+        <div id="loginResult"></div>
+      </div>
+
+      <div id="userInfo" style="display: none">
+        <h3>✅ Authenticated User</h3>
+        <div class="user-info" id="userDetails"></div>
+        <button id="logoutBtn" class="danger">Logout</button>
+      </div>
+    </div>
+
+    <!-- Step 2: FCM Setup -->
+    <div class="container step" id="step2">
+      <h2>📱 Step 2: Firebase Cloud Messaging Setup</h2>
+      <p class="info">Authentication required for FCM operations</p>
+
+      <button id="requestPermission" disabled>
+        Request Notification Permission
+      </button>
+      <button id="getFcmToken" disabled>Get FCM Token</button>
+      <div id="fcmResult"></div>
+    </div>
+
+    <!-- Step 3: Register FCM Token -->
+    <div class="container step" id="step3">
+      <h2>📲 Step 3: Register FCM Token with API</h2>
+      <p class="info">Requires authentication + FCM token</p>
+
+      <button id="registerFcmToken" disabled>Register FCM Token</button>
+      <div id="registerFcmResult"></div>
+    </div>
+
+    <!-- Step 4: Send Notifications -->
+    <div class="container step" id="step4">
+      <h2>🚀 Step 4: Send Test Notifications</h2>
+      <p class="info">Requires authentication + registered FCM token</p>
+
+      <input
+        type="text"
+        id="notificationTitle"
+        placeholder="Notification Title"
+        value="Test Notification"
+      />
+      <input
+        type="text"
+        id="notificationBody"
+        placeholder="Notification Body"
+        value="Hello from your authenticated API!"
+      />
+      <button id="sendNotification" disabled>Send Notification</button>
+      <div id="notificationResult"></div>
+    </div>
+
+    <!-- Debug Console -->
+    <div class="container">
+      <h2>🔍 Debug Console</h2>
+      <div
+        id="debugConsole"
+        style="
+          background: #000;
+          color: #0f0;
+          padding: 15px;
+          font-family: monospace;
+          max-height: 300px;
+          overflow-y: auto;
+        "
+      ></div>
+      <button onclick="clearDebug()">Clear Console</button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+      import {
+        getAuth,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+      import {
+        getMessaging,
+        getToken,
+        onMessage,
+      } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging.js";
+
+      // TODO: Replace with your actual Firebase configuration
+      // Get these from: Firebase Console → Project Settings → General → Your apps
+      const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "your-project-id.firebaseapp.com",
+        projectId: "your-project-id",
+        storageBucket: "your-project-id.firebasestorage.app",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const messaging = getMessaging(app);
+
+      // Global state
+      let currentUser = null;
+      let currentToken = null;
+      let fcmToken = null;
+      let authToken = null;
+
+      // Debug function
+      function debug(message, type = "info") {
+        const debugDiv = document.getElementById("debugConsole");
+        const timestamp = new Date().toLocaleTimeString();
+        const color =
+          type === "error" ? "#f00" : type === "success" ? "#0f0" : "#0ff";
+        debugDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+        debugDiv.scrollTop = debugDiv.scrollHeight;
+        console.log(message);
+      }
+
+      function clearDebug() {
+        document.getElementById("debugConsole").innerHTML = "";
+      }
+
+      // Update UI based on auth state
+      function updateUI() {
+        const authForms = document.getElementById("authForms");
+        const userInfo = document.getElementById("userInfo");
+        const authStatus = document.getElementById("authStatus");
+        const step1 = document.getElementById("step1");
+
+        if (currentUser) {
+          authForms.style.display = "none";
+          userInfo.style.display = "block";
+          authStatus.innerHTML =
+            '<span class="status logged-in">✅ Authenticated</span>';
+          step1.classList.add("completed");
+
+          document.getElementById("userDetails").innerHTML = `
+                    <strong>Email:</strong> ${currentUser.email}<br>
+                    <strong>UID:</strong> ${currentUser.uid}<br>
+                    <strong>Email Verified:</strong> ${
+                      currentUser.emailVerified ? "✅" : "❌"
+                    }<br>
+                    <strong>Last Login:</strong> ${new Date(
+                      currentUser.metadata.lastSignInTime
+                    ).toLocaleString()}
+                `;
+
+          // Enable FCM buttons
+          document.getElementById("requestPermission").disabled = false;
+          document.getElementById("getFcmToken").disabled = false;
+        } else {
+          authForms.style.display = "block";
+          userInfo.style.display = "none";
+          authStatus.innerHTML =
+            '<span class="status logged-out">❌ Not Authenticated</span>';
+          step1.classList.remove("completed");
+
+          // Disable FCM buttons
+          document.getElementById("requestPermission").disabled = true;
+          document.getElementById("getFcmToken").disabled = true;
+          document.getElementById("registerFcmToken").disabled = true;
+          document.getElementById("sendNotification").disabled = true;
+        }
+      }
+
+      // Auth state listener
+      onAuthStateChanged(auth, async (user) => {
+        currentUser = user;
+        if (user) {
+          debug(`🔐 User signed in: ${user.email}`, "success");
+          // Get ID token for API calls
+          authToken = await user.getIdToken();
+          debug(`🎫 Got auth token: ${authToken.substring(0, 20)}...`, "info");
+        } else {
+          debug("🔐 User signed out", "info");
+          authToken = null;
+        }
+        updateUI();
+      });
+
+      // Register new account
+      document
+        .getElementById("registerBtn")
+        .addEventListener("click", async () => {
+          const email = document.getElementById("registerEmail").value;
+          const password = document.getElementById("registerPassword").value;
+
+          if (!email || !password) {
+            alert("Please fill in both email and password");
+            return;
+          }
+
+          try {
+            debug(`📝 Registering user: ${email}`);
+
+            // First register with Firebase Auth (client-side)
+            const userCredential = await createUserWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
+            debug(
+              `✅ Client-side registration successful: ${userCredential.user.uid}`,
+              "success"
+            );
+
+            // Then register with our API (server-side)
+            const authToken = await userCredential.user.getIdToken();
+            const response = await fetch("/api/auth/register", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                email: email,
+                password: password,
+              }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              debug(`✅ Server-side registration successful`, "success");
+              document.getElementById("registerResult").innerHTML = `
+                        <p class="success">✅ Account created successfully!</p>
+                        <p class="info">You can now use FCM features.</p>
+                    `;
+            } else {
+              debug(
+                `❌ Server-side registration failed: ${result.error}`,
+                "error"
+              );
+              document.getElementById("registerResult").innerHTML = `
+                        <p class="warning">⚠️ Client registration succeeded but server registration failed.</p>
+                        <p class="info">You can still login, but server may not recognize the user.</p>
+                    `;
+            }
+          } catch (error) {
+            debug(`❌ Registration failed: ${error.message}`, "error");
+            document.getElementById("registerResult").innerHTML = `
+                    <p class="error">❌ Registration failed: ${error.message}</p>
+                `;
+          }
+        });
+
+      // Login existing user
+      document
+        .getElementById("loginBtn")
+        .addEventListener("click", async () => {
+          const email = document.getElementById("loginEmail").value;
+          const password = document.getElementById("loginPassword").value;
+
+          if (!email || !password) {
+            alert("Please fill in both email and password");
+            return;
+          }
+
+          try {
+            debug(`🔑 Logging in user: ${email}`);
+            const userCredential = await signInWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
+            debug(`✅ Login successful: ${userCredential.user.uid}`, "success");
+
+            document.getElementById("loginResult").innerHTML = `
+                    <p class="success">✅ Login successful!</p>
+                `;
+          } catch (error) {
+            debug(`❌ Login failed: ${error.message}`, "error");
+            document.getElementById("loginResult").innerHTML = `
+                    <p class="error">❌ Login failed: ${error.message}</p>
+                `;
+          }
+        });
+
+      // Logout
+      document
+        .getElementById("logoutBtn")
+        .addEventListener("click", async () => {
+          try {
+            await signOut(auth);
+            debug("🔐 Logged out successfully", "info");
+
+            // Clear tokens
+            fcmToken = null;
+            authToken = null;
+
+            // Clear results
+            document.getElementById("registerResult").innerHTML = "";
+            document.getElementById("loginResult").innerHTML = "";
+            document.getElementById("fcmResult").innerHTML = "";
+            document.getElementById("registerFcmResult").innerHTML = "";
+            document.getElementById("notificationResult").innerHTML = "";
+
+            // Reset step classes
+            document.getElementById("step2").classList.remove("completed");
+            document.getElementById("step3").classList.remove("completed");
+            document.getElementById("step4").classList.remove("completed");
+          } catch (error) {
+            debug(`❌ Logout failed: ${error.message}`, "error");
+          }
+        });
+
+      // Request notification permission
+      document
+        .getElementById("requestPermission")
+        .addEventListener("click", async () => {
+          try {
+            debug("📱 Requesting notification permission...");
+            const permission = await Notification.requestPermission();
+
+            if (permission === "granted") {
+              debug("✅ Notification permission granted", "success");
+              document.getElementById("fcmResult").innerHTML =
+                '<p class="success">✅ Permission granted! Now get your FCM token.</p>';
+            } else {
+              debug("❌ Notification permission denied", "error");
+              document.getElementById("fcmResult").innerHTML =
+                '<p class="error">❌ Permission denied. Please enable notifications in browser settings.</p>';
+            }
+          } catch (error) {
+            debug(`❌ Error requesting permission: ${error.message}`, "error");
+          }
+        });
+
+      // Get FCM token
+      document
+        .getElementById("getFcmToken")
+        .addEventListener("click", async () => {
+          try {
+            debug("📲 Getting FCM token...");
+
+            // Register service worker
+            if ("serviceWorker" in navigator) {
+              const registration = await navigator.serviceWorker.register(
+                "/firebase-messaging-sw.js"
+              );
+              debug("✅ Service Worker registered");
+            }
+
+            const token = await getToken(messaging, {
+              vapidKey: "VAPID_KEY", // TODO: Replace with your VAPID key from Firebase Console
+            });
+
+            if (token) {
+              fcmToken = token;
+              debug(
+                `✅ FCM Token received: ${token.substring(0, 20)}...`,
+                "success"
+              );
+
+              document.getElementById("fcmResult").innerHTML = `
+                        <p class="success">✅ FCM Token received!</p>
+                        <div class="token-display">${token}</div>
+                        <p class="info">Token saved. You can now register it with the API.</p>
+                    `;
+
+              document.getElementById("registerFcmToken").disabled = false;
+              document.getElementById("step2").classList.add("completed");
+            } else {
+              debug("❌ No FCM token available", "error");
+              document.getElementById("fcmResult").innerHTML =
+                '<p class="error">❌ No FCM token available. Make sure notifications are enabled.</p>';
+            }
+          } catch (error) {
+            debug(`❌ Error getting FCM token: ${error.message}`, "error");
+            document.getElementById(
+              "fcmResult"
+            ).innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+          }
+        });
+
+      // Register FCM token with API
+      document
+        .getElementById("registerFcmToken")
+        .addEventListener("click", async () => {
+          if (!fcmToken || !authToken) {
+            alert("Need both FCM token and authentication");
+            return;
+          }
+
+          try {
+            debug("📝 Registering FCM token with API...");
+
+            const response = await fetch("/api/fcm/tokens", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authToken}`,
+              },
+              body: JSON.stringify({
+                fcmToken: fcmToken,
+                metadata: {
+                  deviceType: "web",
+                  userAgent: navigator.userAgent,
+                  timestamp: new Date().toISOString(),
+                },
+              }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              debug(
+                `✅ FCM token registered: ${result.data.tokenId}`,
+                "success"
+              );
+
+              document.getElementById("registerFcmResult").innerHTML = `
+                        <p class="success">✅ FCM token registered successfully!</p>
+                        <p class="info">Token ID: ${result.data.tokenId}</p>
+                        <p class="info">User: ${result.data.username} (${result.data.userId})</p>
+                    `;
+
+              document.getElementById("sendNotification").disabled = false;
+              document.getElementById("step3").classList.add("completed");
+            } else {
+              debug(`❌ FCM registration failed: ${result.error}`, "error");
+              document.getElementById(
+                "registerFcmResult"
+              ).innerHTML = `<p class="error">❌ Registration failed: ${result.error}</p>`;
+            }
+          } catch (error) {
+            debug(`❌ Error registering FCM token: ${error.message}`, "error");
+            document.getElementById(
+              "registerFcmResult"
+            ).innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+          }
+        });
+
+      // Send test notification
+      document
+        .getElementById("sendNotification")
+        .addEventListener("click", async () => {
+          if (!fcmToken || !authToken) {
+            alert("Need both FCM token and authentication");
+            return;
+          }
+
+          const title = document.getElementById("notificationTitle").value;
+          const body = document.getElementById("notificationBody").value;
+
+          try {
+            debug("🚀 Sending test notification...");
+
+            const response = await fetch("/api/fcm/notify", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authToken}`,
+              },
+              body: JSON.stringify({
+                tokens: [
+                  {
+                    token: fcmToken,
+                    userId: currentUser.uid,
+                    username: currentUser.email,
+                  },
+                ],
+                messageType: "NOTIFICATION",
+                messageData: {
+                  title: title,
+                  body: body,
+                  customData: {
+                    testMessage: true,
+                    authenticatedUser: currentUser.email,
+                    timestamp: new Date().toISOString(),
+                  },
+                },
+              }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              debug(`✅ Notification sent successfully`, "success");
+
+              document.getElementById("notificationResult").innerHTML = `
+                        <p class="success">✅ Notification sent successfully!</p>
+                        <p class="info">Check your browser for the notification popup.</p>
+                        <div class="token-display">${JSON.stringify(
+                          result.data,
+                          null,
+                          2
+                        )}</div>
+                    `;
+
+              document.getElementById("step4").classList.add("completed");
+            } else {
+              debug(`❌ Notification failed: ${result.error}`, "error");
+              document.getElementById(
+                "notificationResult"
+              ).innerHTML = `<p class="error">❌ Notification failed: ${result.error}</p>`;
+            }
+          } catch (error) {
+            debug(`❌ Error sending notification: ${error.message}`, "error");
+            document.getElementById(
+              "notificationResult"
+            ).innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+          }
+        });
+
+      // Listen for foreground messages
+      onMessage(messaging, (payload) => {
+        debug(
+          `📨 Foreground message received: ${payload.notification?.title}`,
+          "success"
+        );
+
+        // Show browser notification
+        if (Notification.permission === "granted") {
+          const title =
+            payload.notification?.title || payload.data?.title || "New Message";
+          const body =
+            payload.notification?.body ||
+            payload.data?.body ||
+            "You have a message";
+
+          new Notification(title, {
+            body: body,
+            icon: "/firebase-logo.png",
+            data: payload.data,
+          });
+        }
+      });
+
+      debug("🔥 Firebase Auth + FCM Tester initialized", "success");
+    </script>
+  </body>
+</html>

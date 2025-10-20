@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: api-starter-template-fcm
+    env: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        fromService:
+          type: web
+          name: api-starter-template-fcm
+          property: port
+    autoDeploy: false

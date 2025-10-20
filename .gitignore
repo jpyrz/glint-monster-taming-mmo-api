@@ -1,0 +1,21 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Firebase key file (if it still exists)
+firebase-key.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE-specific files
+.vscode/
+.idea/
