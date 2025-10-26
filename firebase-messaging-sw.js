@@ -16,12 +16,12 @@ importScripts(
 // TODO: Update these values with your actual Firebase project credentials
 // Get these from: Firebase Console → Project Settings → General → Your apps
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.firebasestorage.app",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyCeXnv9MlZD2bD1S2dmiWujyG59Hb4_Ir4",
+  authDomain: "glint-monster-tamer.firebaseapp.com",
+  projectId: "glint-monster-tamer",
+  storageBucket: "glint-monster-tamer.firebasestorage.app",
+  messagingSenderId: "605558195039",
+  appId: "1:605558195039:web:3e01dbca79c18d546aecea",
 };
 
 // Initialize Firebase
